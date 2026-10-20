@@ -46,9 +46,12 @@ namespace TodoAPI.Migrations
                     b.Property<DateTime>("UpdateDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Title")
+                    b.HasIndex("UserId", "Title")
                         .IsUnique();
 
                     b.ToTable("Todos");
@@ -87,6 +90,16 @@ namespace TodoAPI.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("TodoAPI.Models.Todo", b =>
+                {
+                    b.HasOne("TodoAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

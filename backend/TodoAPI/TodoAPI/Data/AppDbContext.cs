@@ -20,7 +20,11 @@ namespace TodoAPI.Data
             {
                 x.HasKey(t => t.Id);
                 x.Property(t => t.Title).IsRequired();
-                x.HasIndex(x => x.Title).IsUnique();
+                x.HasIndex(t => new { t.UserId, t.Title }).IsUnique();
+                x.HasOne(t => t.User)
+                    .WithMany()
+                    .HasForeignKey(t => t.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<User>(x =>
             {

@@ -25,4 +25,10 @@ const router = createRouter({
   ],
 })
 
+router.beforeEach((to) => {
+  if (to.path === '/todos' && !localStorage.getItem('token')) {
+    return '/login'
+  }
+})
+
 export default router

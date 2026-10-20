@@ -35,3 +35,40 @@ dotnet run
 npm ci
 npm run dev
 ```
+
+## Kullanıcıya özel görevler
+
+Görevlerin sahibi JWT içindeki kullanıcı kimliğinden belirlenir. Listeleme, arama,
+detay, güncelleme ve silme işlemleri yalnızca bu kullanıcının görevlerine erişir.
+Farklı kullanıcılar aynı görev başlığını kullanabilir.
+
+`backend/TodoAPI/TodoAPI` dizininde yeni veritabanı migration'ını uygulayın ve
+backend'i yeniden başlatın:
+
+```sh
+dotnet ef database update --configuration Release
+```
+
+Migration, eski görevleri silmez. Önceden sahip bilgisi tutulmadığından bu
+kayıtların `UserId` alanı boş kalır ve hiçbir kullanıcının listesinde görünmez.
+Bu kayıtlar, sahipleri belirlendikten sonra veritabanında ilgili kullanıcıya
+atanabilir. Yeni görevlerde sahip bilgisi API tarafından otomatik atanır.
+
+Kayıt isteği artık `confirmPassword` alanını da gerektirir. Şifreler hem kayıt
+formunda hem API'de karşılaştırılır; uyuşmayan veya eksik tekrar alanı olan API
+istekleri `400` döner.
+
+## Doğrulama
+
+Proje kök dizininde:
+
+```sh
+dotnet test backend/TodoAPI/TodoAPI.slnx --configuration Release
+```
+
+API testleri ayrı bir bellek içi SQLite veritabanında gerçek JWT doğrulamasıyla
+çalışır; kullanıcılar arası erişimi, sahip bilgisinin istekle değiştirilememesini,
+sahipsiz eski görevleri ve şifre tekrarı doğrulamasını denetler. PostgreSQL'e
+özel arama ve migration uygulaması bu testlerin kapsamı dışındadır.
+
+Frontend için `frontend/todo-frontend` dizininde `npm run build` komutunu çalıştırın.
