@@ -9,12 +9,18 @@ const router = useRouter();
 const fullName = ref("");
 const email = ref("");
 const password = ref("");
+const confirmPassword = ref("");
 const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 const busy = ref(false);
 const error = ref("");
 async function submit() {
   if (busy.value) return;
   error.value = "";
+  if (props.mode === "register" && password.value !== confirmPassword.value) {
+    error.value = "Şifreler eşleşmiyor. Lütfen tekrar kontrol et.";
+    return;
+  }
   busy.value = true;
   try {
     const request: LoginRequest | RegisterRequest =
@@ -23,6 +29,7 @@ async function submit() {
             fullName: fullName.value.trim(),
             email: email.value.trim(),
             password: password.value,
+            confirmPassword: confirmPassword.value,
           }
         : { email: email.value.trim(), password: password.value };
     const response = await api.post(`/Auth/${props.mode}`, request);
@@ -156,6 +163,28 @@ async function submit() {
               <AppIcon name="eye" :size="19" />
             </button>
           </div>
+          <template v-if="mode === 'register'">
+            <label for="confirm-password">Şifre tekrarı</label>
+            <div class="password-field">
+              <input
+                id="confirm-password"
+                v-model="confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="Şifreni tekrar gir"
+                required
+              />
+              <button
+                type="button"
+                class="icon-button"
+                :aria-label="showConfirmPassword ? 'Şifre tekrarını gizle' : 'Şifre tekrarını göster'"
+                :aria-pressed="showConfirmPassword"
+                @click="showConfirmPassword = !showConfirmPassword"
+              >
+                <AppIcon name="eye" :size="19" />
+              </button>
+            </div>
+          </template>
           <button
             class="button primary full-width auth-submit"
             type="submit"

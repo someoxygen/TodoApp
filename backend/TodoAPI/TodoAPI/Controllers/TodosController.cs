@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TodoAPI.Abstractions;
@@ -19,16 +20,20 @@ namespace TodoAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<TodoDto>> GetAll([FromQuery] string? search, CancellationToken cancellationToken)
+        public async Task<ActionResult<List<TodoDto>>> GetAll([FromQuery] string? search, CancellationToken cancellationToken)
         {
-            var todos = await _todoService.GetTodosAsync(search, cancellationToken);
+            if (!TryGetUserId(out var userId)) return Unauthorized();
+
+            var todos = await _todoService.GetTodosAsync(userId, search, cancellationToken);
             return Ok(todos);
         }
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<TodoDto>> GetById(int id, CancellationToken cancellationToken)
         {
-            var todo = await _todoService.GetTodoByIdAsync(id, cancellationToken);
+            if (!TryGetUserId(out var userId)) return Unauthorized();
+
+            var todo = await _todoService.GetTodoByIdAsync(userId, id, cancellationToken);
             if (todo is null)
             {
                 return NotFound();
@@ -39,14 +44,18 @@ namespace TodoAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<TodoDto>> Create(CreateTodoDto request, CancellationToken cancellationToken)
         {
-            var todo = await _todoService.CreateTodoAsync(request, cancellationToken);
+            if (!TryGetUserId(out var userId)) return Unauthorized();
+
+            var todo = await _todoService.CreateTodoAsync(userId, request, cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = todo.Id }, todo);
         }
 
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, UpdateTodoDto request, CancellationToken cancellationToken)
         {
-            var updated = await _todoService.UpdateTodoAsync(id, request, cancellationToken);
+            if (!TryGetUserId(out var userId)) return Unauthorized();
+
+            var updated = await _todoService.UpdateTodoAsync(userId, id, request, cancellationToken);
             if (!updated)
             {
                 return NotFound();
@@ -57,12 +66,19 @@ namespace TodoAPI.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
-            var deleted = await _todoService.DeleteTodoAsync(id, cancellationToken);
+            if (!TryGetUserId(out var userId)) return Unauthorized();
+
+            var deleted = await _todoService.DeleteTodoAsync(userId, id, cancellationToken);
             if (!deleted)
             {
                 return NotFound();
             }
             return Ok();
+        }
+        private bool TryGetUserId(out int userId)
+        {
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            return int.TryParse(claim, out userId) && userId > 0;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TodoAPI.Abstractions;
 using TodoAPI.Data;
 using TodoAPI.DTOs.Todos;
@@ -15,9 +15,9 @@ namespace TodoAPI.Services
             _context = context;
         }
 
-        public async Task<TodoDto> CreateTodoAsync(CreateTodoDto request, CancellationToken cancellationToken = default)
+        public async Task<TodoDto> CreateTodoAsync(int userId, CreateTodoDto request, CancellationToken cancellationToken = default)
         {
-            var existingTodo = await _context.Todos.AnyAsync(x => x.Title == request.Title, cancellationToken);
+            var existingTodo = await _context.Todos.AnyAsync(x => x.UserId == userId && x.Title == request.Title, cancellationToken);
             if(existingTodo)
             {
                 throw new InvalidOperationException("A todo with the same title already exists.");
@@ -25,6 +25,7 @@ namespace TodoAPI.Services
 
             var todo = new Todo
             {
+                UserId = userId,
                 Title = request.Title,
                 Description = request.Description,
                 IsActive = request.IsActive,
@@ -44,9 +45,9 @@ namespace TodoAPI.Services
             };
         }
 
-        public async Task<bool> DeleteTodoAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteTodoAsync(int userId, int id, CancellationToken cancellationToken = default)
         {
-            var todo = await _context.Todos.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            var todo = await _context.Todos.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == id, cancellationToken);
             if(todo is null)
             {
                 return false;
@@ -57,10 +58,10 @@ namespace TodoAPI.Services
             return true;
         }
 
-        public async Task<TodoDto?> GetTodoByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<TodoDto?> GetTodoByIdAsync(int userId, int id, CancellationToken cancellationToken = default)
         {
             return await _context.Todos.AsNoTracking()
-                .Where(x => x.Id == id)
+                .Where(x => x.UserId == userId && x.Id == id)
                 .Select(x => new TodoDto
                 {
                     Id = x.Id,
@@ -72,9 +73,9 @@ namespace TodoAPI.Services
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
-        public async Task<List<TodoDto>> GetTodosAsync(string? search, CancellationToken cancellationToken = default)
+        public async Task<List<TodoDto>> GetTodosAsync(int userId, string? search, CancellationToken cancellationToken = default)
         {
-            var query = _context.Todos.AsNoTracking().AsQueryable();
+            var query = _context.Todos.AsNoTracking().Where(x => x.UserId == userId);
 
             if(!string.IsNullOrWhiteSpace(search))
             {
@@ -93,15 +94,15 @@ namespace TodoAPI.Services
             .ToListAsync(cancellationToken);
         }
 
-        public async Task<bool> UpdateTodoAsync(int id, UpdateTodoDto request, CancellationToken cancellationToken = default)
+        public async Task<bool> UpdateTodoAsync(int userId, int id, UpdateTodoDto request, CancellationToken cancellationToken = default)
         {
-            var todo = await _context.Todos.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            var todo = await _context.Todos.FirstOrDefaultAsync(x => x.UserId == userId && x.Id == id, cancellationToken);
             if(todo is null)
             {
                 return false;
             }
             
-            var duplicateTodo = await _context.Todos.AnyAsync(x => x.Title == request.Title && x.Id != id, cancellationToken);
+            var duplicateTodo = await _context.Todos.AnyAsync(x => x.UserId == userId && x.Title == request.Title && x.Id != id, cancellationToken);
             if (duplicateTodo)
             {
                 throw new InvalidOperationException("A todo with the same title already exists.");
