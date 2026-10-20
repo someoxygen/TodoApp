@@ -1,0 +1,55 @@
+# Local environment files; keep shareable templates
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.template
+
+# IDE settings and per-user files
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.user
+*.suo
+*.sln.docstates
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+
+# .NET build, restore and publish output
+/backend/**/[Bb]in/
+/backend/**/[Oo]bj/
+/backend/**/[Aa]rtifacts/
+/backend/**/[Pp]ublish/
+*.nupkg
+*.snupkg
+
+# .NET test results and coverage
+/backend/**/TestResults/
+/backend/**/coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# Backend configuration contains database credentials and JWT keys.
+# Keep sanitized *.example.json templates available for version control.
+/backend/**/appsettings.json
+/backend/**/appsettings.*.json
+!/backend/**/appsettings.example.json
+!/backend/**/appsettings.*.example.json
+
+# Local deployment profiles and certificates
+/backend/**/*.pubxml
+*.pfx
+*.p12
