@@ -82,7 +82,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Opt in on the single-instance Render deployment; local runs and tests stay unchanged.
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 {
     using var scope = app.Services.CreateScope();
