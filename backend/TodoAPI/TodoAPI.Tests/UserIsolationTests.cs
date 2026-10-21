@@ -21,6 +21,22 @@ namespace TodoAPI.Tests;
 
 public class UserIsolationTests
 {
+    [Theory]
+    [InlineData("https://todo.example.com", true)]
+    [InlineData("https://other.example.com", false)]
+    public async Task Deployment_health_is_public_and_cors_only_allows_configured_origin(string origin, bool allowed)
+    {
+        using var app = new TestApp();
+        using var client = app.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/health");
+        request.Headers.Add("Origin", origin);
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(allowed, response.Headers.Contains("Access-Control-Allow-Origin"));
+        if (allowed)
+            Assert.Equal(origin, Assert.Single(response.Headers.GetValues("Access-Control-Allow-Origin")));
+    }
+
     [Fact]
     public async Task Users_can_only_read_update_and_delete_their_own_todos()
     {
@@ -152,6 +168,8 @@ internal sealed class TestApp : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("Cors:AllowedOrigins:0", "https://todo.example.com");
+        builder.UseSetting("Database:ApplyMigrations", "false");
         builder.UseSetting("Jwt:Key", Key);
         builder.UseSetting("Jwt:Issuer", "TodoAPI.Tests");
         builder.UseSetting("Jwt:Audience", "TodoAPI.Tests");
