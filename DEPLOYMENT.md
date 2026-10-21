@@ -114,6 +114,18 @@ isteklerinin CORS nedeniyle çalışmaması normaldir.
 
 ## 6. Yayını kontrol et
 
+Uygulama ilk açılışta API'nin `/health` adresine istek gönderir. Bağlantı
+hazırlanırken bekleme ekranı görünür; başarılı olunca istenen sayfa açılır.
+Her biri en fazla 30 saniye süren 3 deneme ve aralarında 2 saniye bekleme vardır.
+Bağlantı kurulamazsa otomatik denemeler durur ve "Tekrar dene" düğmesi görünür.
+Sayfalar arasında gezinmek kontrolü yeniden başlatmaz; tam sayfa yenileme başlatır.
+Harici ping servisi veya ek ortam değişkeni gerekmez. Bu kontrol API'yi uyandırır,
+Neon veritabanının ilk sorgudaki uyanma süresini ortadan kaldırmaz.
+
+Bu frontend değişikliğini yayınlamak için GitHub'a push et; Static Site otomatik
+yayını kapalıysa Render'da Manual Deploy → Deploy latest commit seç.
+Frontend testleri: `frontend/todo-frontend` dizininde `node --test tests/wakeServer.test.mjs` (Node 24).
+
 - Frontend adresinden yeni hesap oluştur, giriş yap, görev ekle/düzenle/sil.
 - Sayfayı yenile ve kayıtların korunduğunu doğrula.
 - `/login` bağlantısını doğrudan yeni sekmede aç.
