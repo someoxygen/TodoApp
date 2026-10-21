@@ -1,4 +1,3 @@
-// A bounded startup check. It never retries application writes or sends JWTs.
 export async function wakeServer(
   apiUrl: string,
   signal: AbortSignal,
