@@ -1,5 +1,9 @@
 # TodoApp
 
+## İnternette yayınlama
+
+Render + Neon kurulumu için [yayınlama rehberini](DEPLOYMENT.md) takip edin.
+
 Vue 3 ve ASP.NET Core ile geliştirilen bir görev yönetimi uygulaması. Kullanıcılar hesap oluşturabilir, giriş yapabilir ve görevleri tek bir ekran üzerinden yönetebilir.
 
 ## Özellikler
