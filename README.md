@@ -2,6 +2,14 @@
 
 Vue 3 ve ASP.NET Core ile geliştirilen bir görev yönetimi uygulaması. Kullanıcılar hesap oluşturabilir, giriş yapabilir ve görevleri tek bir ekran üzerinden yönetebilir.
 
+## Canlı Demo
+
+[TodoApp'i hemen dene →](https://todoapp-frontend-3irt.onrender.com/)
+
+Kurulum yapmadan tarayıcından hesap oluşturabilir, günlük görevlerini planlayabilir ve kendi görev listeni yönetebilirsin.
+
+> İlk açılışta sunucunun hazırlanması yaklaşık bir dakika sürebilir. Bağlantı kurulduğunda uygulama otomatik olarak açılır.
+
 ## Özellikler
 
 - Kullanıcı kaydı ve giriş
