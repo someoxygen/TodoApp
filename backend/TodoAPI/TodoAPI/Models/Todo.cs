@@ -1,4 +1,4 @@
-﻿namespace TodoAPI.Models
+namespace TodoAPI.Models
 {
     public class Todo
     {
@@ -9,6 +9,7 @@
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool IsCompleted { get; set; }
         public DateTime CreateDate { get; set; } = DateTime.UtcNow;
         public DateTime UpdateDate { get; set; }
     }

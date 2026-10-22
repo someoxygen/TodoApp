@@ -1,10 +1,10 @@
-# TodoApp
+# Rota
 
 Vue 3 ve ASP.NET Core ile geliştirilen bir görev yönetimi uygulaması. Kullanıcılar hesap oluşturabilir, giriş yapabilir ve görevleri tek bir ekran üzerinden yönetebilir.
 
 ## Canlı Demo
 
-[TodoApp'i hemen dene →](https://todoapp-frontend-3irt.onrender.com/)
+[Rota’yı hemen dene →](https://todoapp-frontend-3irt.onrender.com/)
 
 Kurulum yapmadan tarayıcından hesap oluşturabilir, günlük görevlerini planlayabilir ve kendi görev listeni yönetebilirsin.
 
@@ -39,10 +39,22 @@ dotnet run
 
 **Frontend** — `frontend/todo-frontend` dizininde:
 
+Yerel geliştirmede `.env.development.example` dosyasını
+`.env.development.local` adıyla kopyalayın. Bu ayar yalnızca geliştirme modunda
+API adresini `/api` yapar; canlı ortamın `VITE_API_URL` ayarını değiştirmez.
+Backend'i `dotnet run --launch-profile http` ile başlatın. Vite, `/api` ve
+`/health` isteklerini `http://localhost:5044` adresine yönlendirir; yerel HTTPS
+sertifikası gerekmez. Ortam dosyasını değiştirdikten sonra Vite'ı yeniden başlatın.
+
 ```sh
 npm ci
 npm run dev
 ```
+
+`Bağlantı kurulamadı` ekranında kalırsanız backend'in çalıştığını ve
+`http://localhost:5044/health` adresinin `{"status":"ok"}` döndürdüğünü kontrol edin.
+Arayüzün açılması için backend, hesap ve görev işlemleri için ayrıca yapılandırılmış
+veritabanı erişilebilir olmalıdır.
 
 ## Kullanıcıya özel görevler
 
@@ -65,6 +77,26 @@ atanabilir. Yeni görevlerde sahip bilgisi API tarafından otomatik atanır.
 Kayıt isteği artık `confirmPassword` alanını da gerektirir. Şifreler hem kayıt
 formunda hem API'de karşılaştırılır; uyuşmayan veya eksik tekrar alanı olan API
 istekleri `400` döner.
+
+## Görev durumları
+
+`isActive` (aktif/pasif) ve `isCompleted` (tamamlandı/tamamlanmadı) birbirinden
+bağımsızdır. Görev kutucuğu yalnızca tamamlanma durumunu değiştirir; düzenleme
+formunda iki durum ayrı ayrı ayarlanabilir. Tamamlanan sayısı ve ilerleme yüzdesi
+`isCompleted` alanından hesaplanır.
+
+`AddTodoCompletion` migration'ı mevcut görevlerin aktif/pasif değerlerini korur
+ve tamamlanma durumunu `false` olarak başlatır. Eski pasif kayıtların gerçekten
+tamamlanıp tamamlanmadığı bilinmediği için otomatik tamamlandı kabul edilmezler.
+Güncelleme isteğinde `isCompleted` gönderilmezse mevcut tamamlanma değeri korunur.
+
+Yeni backend sürümünü çalıştırmadan önce proje kökünde migration'ı uygulayın:
+
+```sh
+dotnet ef database update --project backend/TodoAPI/TodoAPI --configuration Release
+```
+
+`Database:ApplyMigrations=true` ayarlı ortamlarda migration başlangıçta uygulanır.
 
 ## Doğrulama
 
