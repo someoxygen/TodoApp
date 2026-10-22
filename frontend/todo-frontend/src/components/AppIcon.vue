@@ -1,6 +1,8 @@
 ﻿<script setup lang="ts">
 withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 });
 const paths: Record<string, string> = {
+  route: "M4 20L10 4l10 10-16 6z M10 4l3 9 7 1 M4 20l9-7",
+  steps: "M4 18h5v-5h5V8h6 M15 3h6v6",
   grid: "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   check: "M5 12l4 4L19 6",
   list: "M9 6h12 M9 12h12 M9 18h12 M3 6h.01 M3 12h.01 M3 18h.01",
