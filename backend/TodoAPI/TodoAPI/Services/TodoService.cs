@@ -29,6 +29,7 @@ namespace TodoAPI.Services
                 Title = request.Title,
                 Description = request.Description,
                 IsActive = request.IsActive,
+                IsCompleted = request.IsCompleted,
                 CreateDate = DateTime.UtcNow,
             };
 
@@ -41,6 +42,7 @@ namespace TodoAPI.Services
                 Title = todo.Title,
                 Description = todo.Description,
                 IsActive = todo.IsActive,
+                IsCompleted = todo.IsCompleted,
                 CreateDate = todo.CreateDate
             };
         }
@@ -68,6 +70,7 @@ namespace TodoAPI.Services
                     Title = x.Title,
                     Description = x.Description,
                     IsActive = x.IsActive,
+                    IsCompleted = x.IsCompleted,
                     CreateDate = x.CreateDate
                 })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -89,6 +92,7 @@ namespace TodoAPI.Services
                 Title = x.Title,
                 Description = x.Description,
                 IsActive = x.IsActive,
+                IsCompleted = x.IsCompleted,
                 CreateDate = x.CreateDate
             })
             .ToListAsync(cancellationToken);
@@ -112,7 +116,8 @@ namespace TodoAPI.Services
             todo.Description = request.Description;
             todo.IsActive = request.IsActive;
             todo.CreateDate = request.CreateDate;
-            todo.IsActive = request.IsActive;
+            if (request.IsCompleted.HasValue)
+                todo.IsCompleted = request.IsCompleted.Value;
             todo.UpdateDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(cancellationToken);

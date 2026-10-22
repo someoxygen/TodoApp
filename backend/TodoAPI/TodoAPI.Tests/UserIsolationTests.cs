@@ -22,6 +22,59 @@ namespace TodoAPI.Tests;
 public class UserIsolationTests
 {
     [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task Completion_and_activity_are_independent(bool active, bool completed)
+    {
+        using var app = new TestApp();
+        using var client = await Register(app, "status-user");
+        var response = await client.PostAsJsonAsync("/api/Todos", new
+        {
+            title = "Independent states", isActive = active, isCompleted = completed
+        });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var todo = (await response.Content.ReadFromJsonAsync<TodoDto>())!;
+        Assert.Equal(active, todo.IsActive);
+        Assert.Equal(completed, todo.IsCompleted);
+
+        // Changing activity without a completion field must preserve completion.
+        response = await client.PutAsJsonAsync($"/api/Todos/{todo.Id}", new
+        {
+            title = todo.Title, isActive = !active, createDate = todo.CreateDate
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await client.GetFromJsonAsync<TodoDto>($"/api/Todos/{todo.Id}"))!;
+        Assert.Equal(!active, updated.IsActive);
+        Assert.Equal(completed, updated.IsCompleted);
+
+        response = await client.PutAsJsonAsync($"/api/Todos/{todo.Id}", new
+        {
+            title = todo.Title, isActive = !active, isCompleted = !completed, createDate = todo.CreateDate
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        updated = Assert.Single(await List(client));
+        Assert.Equal(!active, updated.IsActive);
+        Assert.Equal(!completed, updated.IsCompleted);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task New_todos_default_to_incomplete_regardless_of_activity(bool active)
+    {
+        using var app = new TestApp();
+        using var client = await Register(app, "defaults-user");
+        var response = await client.PostAsJsonAsync("/api/Todos", new { title = "Default state", isActive = active });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var todo = (await response.Content.ReadFromJsonAsync<TodoDto>())!;
+        Assert.Equal(active, todo.IsActive);
+        Assert.False(todo.IsCompleted);
+        Assert.False(Assert.Single(await List(client)).IsCompleted);
+    }
+
+    [Theory]
     [InlineData("https://todo.example.com", true)]
     [InlineData("https://other.example.com", false)]
     public async Task Deployment_health_is_public_and_cors_only_allows_configured_origin(string origin, bool allowed)
