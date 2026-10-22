@@ -598,6 +598,7 @@ form > .password-field {
 }
 .task-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
@@ -605,6 +606,7 @@ form > .password-field {
 }
 .filter-tabs {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
@@ -740,6 +742,10 @@ form > .password-field {
 .task-meta .status-active {
   color: #b46d3e;
   background: #fbefdf;
+}
+.task-meta .status-inactive {
+  color: #797164;
+  background: #efede7;
 }
 .task-meta .status-completed {
   color: #70825a;
