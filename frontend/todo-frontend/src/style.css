@@ -281,6 +281,7 @@ form > .password-field {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  flex-wrap: wrap;
   padding: 22px max(5vw, 24px);
   background: #fffdf8;
   border-bottom: 1px solid var(--border);
@@ -327,6 +328,12 @@ form > .password-field {
   padding: 12px 17px;
   color: #777366;
   font-size: 12px;
+}
+.sidebar-bottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .logout-button:hover {
   background: #f4eee2;
@@ -1062,6 +1069,7 @@ form > .password-field {
 }
 .auth-top-link {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
@@ -1227,6 +1235,7 @@ form > .password-field {
   .sidebar nav {
     order: 3;
     width: 100%;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
     border-top: 1px solid var(--border);

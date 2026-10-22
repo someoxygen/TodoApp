@@ -1,10 +1,14 @@
 ﻿<script setup lang="ts">
+import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n";
 import api from "@/api/api";
 import AppIcon from "@/components/AppIcon.vue";
+import LanguageToggle from "@/components/LanguageToggle.vue";
 import type { CreateTodoRequest, Todo, UpdateTodoRequest } from "@/models/todo";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
+const { t, locale, formatPercent } = useI18n();
 const router = useRouter();
 const todos = ref<Todo[]>([]);
 const filter = ref<"all" | "active" | "inactive" | "completed" | "incomplete">("all");
@@ -12,8 +16,8 @@ const search = ref("");
 const loading = ref(true);
 const saving = ref(false);
 const busyId = ref<number | null>(null);
-const error = ref("");
-const notice = ref("");
+const error = ref<MessageKey | "">("");
+const notice = ref<MessageKey | "">("");
 const id = ref(0);
 const title = ref("");
 const description = ref("");
@@ -36,7 +40,7 @@ const activeCount = computed(
   () => todos.value.filter((todo) => todo.isActive).length,
 );
 const completedCount = computed(() => todos.value.filter((todo) => todo.isCompleted).length);
-const filterLabels = { all: "Genel bakış", active: "Aktif görevler", inactive: "Pasif görevler", completed: "Tamamlananlar", incomplete: "Tamamlanmayanlar" };
+const filterLabels = { all: "overview", active: "activeTasks", inactive: "inactiveTasks", completed: "completedTasks", incomplete: "incompleteTasks" } as const;
 const progress = computed(() =>
   todos.value.length
     ? Math.round((completedCount.value / todos.value.length) * 100)
@@ -51,21 +55,21 @@ const visibleTodos = computed(() =>
         (filter.value === "completed" && todo.isCompleted) ||
         (filter.value === "incomplete" && !todo.isCompleted)) &&
       `${todo.title} ${todo.description}`
-        .toLocaleLowerCase("tr")
-        .includes(search.value.toLocaleLowerCase("tr")),
+        .toLocaleLowerCase(locale.value)
+        .includes(search.value.toLocaleLowerCase(locale.value)),
   ),
 );
-const today = new Intl.DateTimeFormat("tr-TR", {
+const today = computed(() => new Intl.DateTimeFormat(locale.value, {
   day: "numeric",
   month: "long",
   year: "numeric",
   weekday: "long",
-}).format(new Date());
+}).format(new Date()));
 function formatDate(value: Date) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? "Tarih belirtilmedi"
-    : new Intl.DateTimeFormat("tr-TR", {
+    ? t("noDate")
+    : new Intl.DateTimeFormat(locale.value, {
         day: "numeric",
         month: "short",
       }).format(date);
@@ -77,7 +81,7 @@ async function loadTodos() {
     todos.value = (await api.get<Todo[]>("/Todos")).data;
   } catch {
     error.value =
-      "Görevler yüklenemedi. Bağlantınızı kontrol edip yeniden deneyin.";
+      "loadError";
   } finally {
     loading.value = false;
   }
@@ -132,13 +136,13 @@ async function saveTodo() {
       await api.post("/Todos", request);
     }
     notice.value = id.value
-      ? "Görev güncellendi."
-      : "Yeni görev eklendi. Hadi başlayalım!";
+      ? "taskUpdated"
+      : "taskCreated";
     clearForm();
     editorDialog.value?.close();
     await loadTodos();
   } catch {
-    error.value = "Görev kaydedilemedi. Lütfen yeniden deneyin.";
+    error.value = "saveError";
   } finally {
     saving.value = false;
   }
@@ -158,7 +162,7 @@ async function toggleTodo(todo: Todo) {
     } satisfies UpdateTodoRequest);
     todo.isCompleted = !todo.isCompleted;
   } catch {
-    error.value = "Görev durumu değiştirilemedi. Lütfen yeniden deneyin.";
+    error.value = "toggleError";
   } finally {
     busyId.value = null;
   }
@@ -173,10 +177,10 @@ async function deleteTodo() {
     todos.value = todos.value.filter((item) => item.id !== todo.id);
     if (id.value === todo.id) clearForm();
     deleteTarget.value = null;
-    notice.value = "Görev silindi.";
+    notice.value = "taskDeleted";
   } catch {
     deleteTarget.value = null;
-    error.value = "Görev silinemedi. Lütfen yeniden deneyin.";
+    error.value = "deleteError";
   } finally {
     busyId.value = null;
   }
@@ -195,42 +199,43 @@ onMounted(loadTodos);
         ><span class="brand-icon"><AppIcon name="route" :size="23" /></span>
         rota<span class="brand-dot">↗</span></RouterLink
       >
-      <nav aria-label="Görev menüsü">
+      <nav :aria-label="t('taskMenu')">
         <button
           :class="['nav-item', { selected: filter === 'all' }]"
           :aria-pressed="filter === 'all'"
           @click="filter = 'all'"
         >
-          <AppIcon name="grid" /> Genel bakış <span>{{ todos.length }}</span>
+          <AppIcon name="grid" /> {{ t('overview') }} <span>{{ todos.length }}</span>
         </button>
         <button
           :class="['nav-item', { selected: filter === 'active' }]"
           :aria-pressed="filter === 'active'"
           @click="filter = 'active'"
         >
-          <AppIcon name="clock" /> Aktif görevler <span>{{ activeCount }}</span>
+          <AppIcon name="clock" /> {{ t('activeTasks') }} <span>{{ activeCount }}</span>
         </button>
         <button
           :class="['nav-item', { selected: filter === 'completed' }]"
           :aria-pressed="filter === 'completed'"
           @click="filter = 'completed'"
         >
-          <AppIcon name="check" /> Tamamlananlar
+          <AppIcon name="check" /> {{ t('completedTasks') }}
           <span>{{ completedCount }}</span>
         </button>
       </nav>
       <div class="sidebar-bottom">
+        <LanguageToggle />
         <button class="logout-button" @click="logout">
-          <AppIcon name="logout" :size="18" /> Çıkış yap
+          <AppIcon name="logout" :size="18" /> {{ t('signOut') }}
         </button>
       </div>
     </header>
     <main class="main-content">
       <header class="topbar">
         <div class="breadcrumb">
-          Çalışma alanım <span>/</span>
+          {{ t('workspace') }} <span>/</span>
           <strong>{{
-            filterLabels[filter]
+            t(filterLabels[filter])
           }}</strong>
         </div>
         <span class="today"
@@ -240,23 +245,23 @@ onMounted(loadTodos);
       <div class="page-content">
         <section class="page-heading">
           <div>
-            <div class="eyebrow"><span /> KENDİ YOLUNU ÇİZ</div>
-            <h1>Gününü tasarla<span>.</span></h1>
-            <p>Biraz netlik, biraz hareket. Bugün nereye varmak istersin?</p>
+            <div class="eyebrow"><span /> {{ t('pageEyebrow') }}</div>
+            <h1>{{ t('pageHeading') }}<span>.</span></h1>
+            <p>{{ t('pageSubtitle') }}</p>
           </div>
           <button class="button primary" @click="newTodo">
-            <AppIcon name="plus" :size="18" /> Yeni görev
+            <AppIcon name="plus" :size="18" /> {{ t('newTask') }}
           </button>
         </section>
-        <section class="focus-banner" aria-label="İlerleme özeti">
+        <section class="focus-banner" :aria-label="t('progressSummary')">
           <div>
-            <span class="banner-kicker">YOLCULUĞUN BİR BAKIŞTA</span>
-            <h2>Her tamamlanan iş,<br /><em>yeni bir yol açar.</em></h2>
+            <span class="banner-kicker">{{ t('bannerKicker') }}</span>
+            <h2>{{ t('bannerHeading') }}<br /><em>{{ t('bannerHeadingEm') }}</em></h2>
             <p>
               {{
                 todos.length
-                  ? `${todos.length} görevinden ${completedCount} tanesini tamamladın. Kendi ritminde devam et.`
-                  : "İlk görevini ekle. Gerisi senin ritminde ilerlesin."
+                  ? t('progressMessage', { total: todos.length, completed: completedCount })
+                  : t("firstTaskPrompt")
               }}
             </p>
           </div>
@@ -271,51 +276,49 @@ onMounted(loadTodos);
             ><span class="route-marker"
               ><AppIcon name="route" :size="28" /></span
             ><span class="route-caption"
-              >Küçük planlar. Güzel başlangıçlar.</span
+              >{{ t('routeCaption') }}</span
             >
           </div>
           <div class="journey-total">
-            <strong>%{{ progress }}</strong
-            ><span>tamamlandı</span>
+            <strong>{{ formatPercent(progress / 100) }}</strong
+            ><span>{{ t('progressCaption') }}</span>
           </div>
         </section>
-        <section class="overview" aria-label="Görev özeti">
+        <section class="overview" :aria-label="t('taskSummary')">
           <div class="stat-card">
             <span class="stat-icon neutral"><AppIcon name="list" /></span>
             <div>
-              <span class="stat-label">Toplam görev</span
+              <span class="stat-label">{{ t('totalTasks') }}</span
               ><strong>{{ todos.length.toString().padStart(2, "0") }}</strong>
             </div>
-            <span class="stat-caption">Hepsi bir arada</span>
+            <span class="stat-caption">{{ t('allTogether') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-icon amber"><AppIcon name="clock" /></span>
             <div>
-              <span class="stat-label">Aktif görevler</span
+              <span class="stat-label">{{ t('activeTasks') }}</span
               ><strong>{{ activeCount.toString().padStart(2, "0") }}</strong>
             </div>
-            <span class="stat-caption">Sıradaki adımların</span>
+            <span class="stat-caption">{{ t('nextSteps') }}</span>
           </div>
           <div class="stat-card">
             <span class="stat-icon green"><AppIcon name="check" /></span>
             <div>
-              <span class="stat-label">Tamamlanan</span
+              <span class="stat-label">{{ t('completed') }}</span
               ><strong>{{ completedCount.toString().padStart(2, "0") }}</strong>
             </div>
-            <span class="stat-caption">Emeğinin karşılığı</span>
+            <span class="stat-caption">{{ t('effortReward') }}</span>
           </div>
         </section>
         <div v-if="error" class="message error" role="alert">
-          {{ error
-          }}<button v-if="!loading" class="text-button" @click="loadTodos">
-            Yeniden dene
+          {{ t(error) }}<button v-if="!loading" class="text-button" @click="loadTodos">
+            {{ t('retryLoad') }}
           </button>
         </div>
         <div v-if="notice" class="message success" role="status">
-          <AppIcon name="check" :size="17" />{{ notice
-          }}<button
+          <AppIcon name="check" :size="17" />{{ t(notice) }}<button
             class="icon-button"
-            aria-label="Bildirimi kapat"
+            :aria-label="t('dismissNotice')"
             @click="notice = ''"
           >
             <AppIcon name="close" :size="16" />
@@ -326,48 +329,48 @@ onMounted(loadTodos);
             <div class="panel-heading">
               <div>
                 <h2>
-                  Yapılacaklar
+                  {{ t('tasksHeading') }}
                   <span class="count-badge">{{ todos.length }}</span>
                 </h2>
-                <p>Aklından çıkar, rotana ekle.</p>
+                <p>{{ t('tasksSubtitle') }}</p>
               </div>
               <AppIcon name="list" :size="21" />
             </div>
             <div class="task-toolbar">
-              <div class="filter-tabs" aria-label="Görev filtresi">
+              <div class="filter-tabs" :aria-label="t('taskFilter')">
                 <button
                   :class="{ active: filter === 'all' }"
                   :aria-pressed="filter === 'all'"
                   @click="filter = 'all'"
                 >
-                  Tümü</button
+                  {{ t('all') }}</button
                 ><button
                   :class="{ active: filter === 'active' }"
                   :aria-pressed="filter === 'active'"
                   @click="filter = 'active'"
                 >
-                  Aktif <span>{{ activeCount }}</span></button
+                  {{ t('active') }} <span>{{ activeCount }}</span></button
                 ><button
                   :class="{ active: filter === 'completed' }"
                   :aria-pressed="filter === 'completed'"
                   @click="filter = 'completed'"
                 >
-                  Tamamlanan
+                  {{ t('completed') }}
                 </button>
-                <button :class="{ active: filter === 'incomplete' }" :aria-pressed="filter === 'incomplete'" @click="filter = 'incomplete'">Tamamlanmayan</button>
-                <button :class="{ active: filter === 'inactive' }" :aria-pressed="filter === 'inactive'" @click="filter = 'inactive'">Pasif</button>
+                <button :class="{ active: filter === 'incomplete' }" :aria-pressed="filter === 'incomplete'" @click="filter = 'incomplete'">{{ t('incomplete') }}</button>
+                <button :class="{ active: filter === 'inactive' }" :aria-pressed="filter === 'inactive'" @click="filter = 'inactive'">{{ t('inactive') }}</button>
               </div>
               <label class="search-box"
                 ><AppIcon name="search" :size="17" /><input
                   v-model="search"
                   type="search"
-                  placeholder="Görev ara..."
-                  aria-label="Görev ara"
+                  :placeholder="t('searchPlaceholder')"
+                  :aria-label="t('searchTasks')"
               /></label>
             </div>
             <div v-if="loading" class="empty-state" role="status">
               <span class="spinner" />
-              <h3>Görevlerin yükleniyor…</h3>
+              <h3>{{ t('loadingTasks') }}</h3>
             </div>
             <div v-else-if="!visibleTodos.length" class="empty-state">
               <span class="empty-icon"
@@ -376,27 +379,27 @@ onMounted(loadTodos);
               <h3>
                 {{
                   search
-                    ? "Bir eşleşme bulamadık"
+                    ? t("emptySearch")
                     : filter === "completed"
-                      ? "Güzel işler sırada"
+                      ? t("emptyCompleted")
                       : filter === "active"
-                        ? "Aktif görevin yok"
-                        : filter === "inactive" ? "Pasif görevin yok"
-                        : filter === "incomplete" ? "Tamamlanmamış görevin yok"
-                        : "Yeni bir başlangıca yer aç"
+                        ? t("emptyActive")
+                        : filter === "inactive" ? t("emptyInactive")
+                        : filter === "incomplete" ? t("emptyIncomplete")
+                        : t("emptyAll")
                 }}
               </h3>
               <p>
                 {{
                   search
-                    ? "Başka bir kelimeyle aramayı deneyebilirsin."
+                    ? t("emptySearchHelp")
                     : filter === "completed"
-                      ? "Tamamladığın görevler burada yer alacak."
+                      ? t("emptyCompletedHelp")
                       : filter === "active"
-                        ? "Aktif olarak işaretlediğin görevler burada yer alacak."
-                        : filter === "inactive" ? "Pasif olarak işaretlediğin görevler burada yer alacak."
-                        : filter === "incomplete" ? "Tamamlanmamış görevlerin burada yer alacak."
-                        : "İlk görevini ekle, aklındakileri küçük adımlara dönüştür."
+                        ? t("emptyActiveHelp")
+                        : filter === "inactive" ? t("emptyInactiveHelp")
+                        : filter === "incomplete" ? t("emptyIncompleteHelp")
+                        : t("emptyAllHelp")
                 }}
               </p>
               <button
@@ -404,7 +407,7 @@ onMounted(loadTodos);
                 class="button secondary"
                 @click="newTodo"
               >
-                <AppIcon name="plus" :size="17" /> Görev ekle
+                <AppIcon name="plus" :size="17" /> {{ t('addTask') }}
               </button>
             </div>
             <ul v-else class="task-list">
@@ -418,8 +421,8 @@ onMounted(loadTodos);
                   :disabled="busyId !== null"
                   :aria-label="
                     !todo.isCompleted
-                      ? `${todo.title} görevini tamamla`
-                      : `${todo.title} görevini tamamlanmadı olarak işaretle`
+                      ? t('completeTaskLabel', { title: todo.title })
+                      : t('incompleteTaskLabel', { title: todo.title })
                   "
                   :aria-pressed="todo.isCompleted"
                   @click="toggleTodo(todo)"
@@ -435,9 +438,9 @@ onMounted(loadTodos);
                         'status-badge',
                         todo.isActive ? 'status-active' : 'status-inactive',
                       ]"
-                      ><i />{{ todo.isActive ? "Aktif" : "Pasif" }}</span
+                      ><i />{{ todo.isActive ? t("active") : t("inactive") }}</span
                     ><span :class="['status-badge', todo.isCompleted ? 'status-completed' : 'status-active']">
-                      <i />{{ todo.isCompleted ? "Tamamlandı" : "Tamamlanmadı" }}
+                      <i />{{ todo.isCompleted ? t("done") : t("notDone") }}
                     </span><span
                       ><AppIcon name="calendar" :size="13" />{{
                         formatDate(todo.createDate)
@@ -448,16 +451,16 @@ onMounted(loadTodos);
                 <div class="task-actions">
                   <button
                     class="icon-button"
-                    :aria-label="`${todo.title} görevini düzenle`"
-                    title="Düzenle"
+                    :aria-label="t('editTaskLabel', { title: todo.title })"
+                    :title="t('edit')"
                     @click="editTodo(todo)"
                   >
                     <AppIcon name="edit" :size="17" /></button
                   ><button
                     class="icon-button danger-icon"
                     :disabled="busyId !== null"
-                    :aria-label="`${todo.title} görevini sil`"
-                    title="Sil"
+                    :aria-label="t('deleteTaskLabel', { title: todo.title })"
+                    :title="t('delete')"
                     @click="deleteTarget = todo"
                   >
                     <AppIcon name="trash" :size="17" />
@@ -466,8 +469,8 @@ onMounted(loadTodos);
               </li>
             </ul>
             <div class="list-footer">
-              <span>{{ visibleTodos.length }} görev gösteriliyor</span
-              ><span>Her adım önemli.<AppIcon name="route" :size="14" /></span>
+              <span>{{ t('tasksShown', { count: visibleTodos.length }) }}</span
+              ><span>{{ t('everyStep') }}<AppIcon name="route" :size="14" /></span>
             </div>
           </section>
           <dialog
@@ -481,48 +484,48 @@ onMounted(loadTodos);
               <div class="panel-heading">
                 <div>
                   <h2 id="editor-title">
-                    {{ id ? "Görevi düzenle" : "Rotana bir görev ekle" }}
+                    {{ id ? t("editTask") : t("addTaskHeading") }}
                   </h2>
                   <p>
                     {{
                       id
-                        ? "Küçük bir değişiklik, yeni bir adım."
-                        : "Aklındakini yapılacaklara dönüştür."
+                        ? t("editTaskHelp")
+                        : t("addTaskHelp")
                     }}
                   </p>
                 </div>
                 <button
                   class="icon-button"
-                  aria-label="Formu kapat"
+                  :aria-label="t('closeForm')"
                   :disabled="saving"
                   @click="editorDialog?.close()"
                 >
                   <AppIcon name="close" />
                 </button>
               </div>
-              <form @submit.prevent="saveTodo">
+              <form v-localized-validation @submit.prevent="saveTodo">
                 <div v-if="error" class="message error" role="alert">
-                  {{ error }}
+                  {{ t(error) }}
                 </div>
-                <label for="task-title">Görev başlığı <span>*</span></label
+                <label for="task-title">{{ t('taskTitle') }} <span>*</span></label
                 ><input
                   id="task-title"
                   ref="titleInput"
                   v-model="title"
                   required
                   maxlength="200"
-                  placeholder="Neyi başarmak istiyorsun?"
+                  :placeholder="t('titlePlaceholder')"
                 /><label for="task-description"
-                  >Açıklama <span class="optional">isteğe bağlı</span></label
+                  >{{ t('description') }} <span class="optional">{{ t('optional') }}</span></label
                 ><textarea
                   id="task-description"
                   v-model="description"
                   rows="4"
-                  placeholder="Biraz detay ekle…"
+                  :placeholder="t('descriptionPlaceholder')"
                 /><label class="switch-label"
                   ><span
-                    ><strong>Aktif görev</strong
-                    ><small>Görevin aktif veya pasif olmasını belirler.</small></span
+                    ><strong>{{ t('activeTask') }}</strong
+                    ><small>{{ t('activeHelp') }}</small></span
                   ><input
                     v-model="isActive"
                     type="checkbox"
@@ -530,7 +533,7 @@ onMounted(loadTodos);
                     class="switch"
                     aria-hidden="true" /></label
                 ><label class="switch-label">
-                  <span><strong>Tamamlandı</strong><small>Aktif/pasif durumundan bağımsızdır.</small></span>
+                  <span><strong>{{ t('done') }}</strong><small>{{ t('completedHelp') }}</small></span>
                   <input v-model="isCompleted" type="checkbox" class="switch-input" />
                   <span class="switch" aria-hidden="true" />
                 </label><button
@@ -540,10 +543,10 @@ onMounted(loadTodos);
                 >
                   <AppIcon :name="id ? 'check' : 'plus'" :size="18" />{{
                     saving
-                      ? "Kaydediliyor…"
+                      ? t("saving")
                       : id
-                        ? "Değişiklikleri kaydet"
-                        : "Görev ekle"
+                        ? t("saveChanges")
+                        : t("addTask")
                   }}</button
                 ><button
                   v-if="id || title || description"
@@ -551,16 +554,16 @@ onMounted(loadTodos);
                   type="button"
                   @click="clearForm"
                 >
-                  {{ id ? "Düzenlemeyi iptal et" : "Formu temizle" }}
+                  {{ id ? t("cancelEditing") : t("clearForm") }}
                 </button>
               </form>
             </section>
           </dialog>
         </div>
         <footer class="page-footer">
-          <span>Planın belli. Yolun açık.</span
+          <span>{{ t('footerPlan') }}</span
           ><span
-            >rota / Hayatına yer aç <AppIcon name="route" :size="13"
+            >{{ t('footerBrand') }} <AppIcon name="route" :size="13"
           /></span>
         </footer>
       </div>
@@ -576,9 +579,9 @@ onMounted(loadTodos);
     >
       <div v-if="deleteTarget">
         <span class="delete-symbol"><AppIcon name="trash" :size="24" /></span>
-        <h2 id="delete-heading">Görev silinsin mi?</h2>
+        <h2 id="delete-heading">{{ t('deleteHeading') }}</h2>
         <p id="delete-description">
-          “{{ deleteTarget.title }}” kalıcı olarak silinecek.
+          {{ t('deleteDescription', { title: deleteTarget.title }) }}
         </p>
         <div class="dialog-actions">
           <button
@@ -587,13 +590,13 @@ onMounted(loadTodos);
             :disabled="busyId !== null"
             @click="deleteTarget = null"
           >
-            Vazgeç</button
+            {{ t('cancel') }}</button
           ><button
             class="button danger"
             :disabled="busyId !== null"
             @click="deleteTodo"
           >
-            {{ busyId !== null ? "Siliniyor…" : "Görevi sil" }}
+            {{ busyId !== null ? t("deleting") : t("deleteTask") }}
           </button>
         </div>
       </div>

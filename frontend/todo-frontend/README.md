@@ -40,3 +40,22 @@ npm run dev
 ```sh
 npm run build
 ```
+
+## Languages
+
+The interface supports Turkish (default) and English. Use the English / Türkçe
+button on the startup, authentication, or task screen to switch immediately.
+The choice is saved in local storage under `rota-language`. Task titles and
+descriptions remain exactly as entered by the user.
+
+Translations live in `src/i18n/messages.ts`. Add both `tr` and `en` values for
+each new message, and use `useI18n().t()` in components. Keep notifications as
+message keys so they update when the language changes. Dates and percentages
+use the selected locale; forms use the `v-localized-validation` directive for
+validation messages in the same language.
+
+Run the localization and startup tests with:
+
+```sh
+node --test tests/*.test.mjs
+```
