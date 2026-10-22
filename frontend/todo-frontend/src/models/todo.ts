@@ -3,6 +3,7 @@ export interface Todo{
     title:string
     description:string
     isActive:boolean
+    isCompleted:boolean
     createDate:Date
 }
 
@@ -10,6 +11,7 @@ export interface CreateTodoRequest{
     title:string
     description:string
     isActive:boolean
+    isCompleted:boolean
     createDate:Date
 }
 
@@ -17,6 +19,7 @@ export interface UpdateTodoRequest{
     title:string
     description:string
     isActive:boolean
+    isCompleted:boolean
     createDate:Date
     updateDate:Date
 }

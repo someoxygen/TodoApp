@@ -7,7 +7,7 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 const todos = ref<Todo[]>([]);
-const filter = ref<"all" | "active" | "completed">("all");
+const filter = ref<"all" | "active" | "inactive" | "completed" | "incomplete">("all");
 const search = ref("");
 const loading = ref(true);
 const saving = ref(false);
@@ -18,6 +18,7 @@ const id = ref(0);
 const title = ref("");
 const description = ref("");
 const isActive = ref(true);
+const isCompleted = ref(false);
 const createDate = ref<Date>(new Date());
 const editorDialog = ref<HTMLDialogElement | null>(null);
 const titleInput = ref<HTMLInputElement | null>(null);
@@ -34,7 +35,8 @@ watch(deleteTarget, async (todo) => {
 const activeCount = computed(
   () => todos.value.filter((todo) => todo.isActive).length,
 );
-const completedCount = computed(() => todos.value.length - activeCount.value);
+const completedCount = computed(() => todos.value.filter((todo) => todo.isCompleted).length);
+const filterLabels = { all: "Genel bakış", active: "Aktif görevler", inactive: "Pasif görevler", completed: "Tamamlananlar", incomplete: "Tamamlanmayanlar" };
 const progress = computed(() =>
   todos.value.length
     ? Math.round((completedCount.value / todos.value.length) * 100)
@@ -44,7 +46,10 @@ const visibleTodos = computed(() =>
   todos.value.filter(
     (todo) =>
       (filter.value === "all" ||
-        (filter.value === "active" ? todo.isActive : !todo.isActive)) &&
+        (filter.value === "active" && todo.isActive) ||
+        (filter.value === "inactive" && !todo.isActive) ||
+        (filter.value === "completed" && todo.isCompleted) ||
+        (filter.value === "incomplete" && !todo.isCompleted)) &&
       `${todo.title} ${todo.description}`
         .toLocaleLowerCase("tr")
         .includes(search.value.toLocaleLowerCase("tr")),
@@ -82,6 +87,7 @@ function clearForm() {
   title.value = "";
   description.value = "";
   isActive.value = true;
+  isCompleted.value = false;
 }
 async function focusForm() {
   editorDialog.value?.showModal();
@@ -98,6 +104,7 @@ function editTodo(todo: Todo) {
   title.value = todo.title;
   description.value = todo.description;
   isActive.value = todo.isActive;
+  isCompleted.value = todo.isCompleted;
   createDate.value = todo.createDate;
   focusForm();
 }
@@ -111,6 +118,7 @@ async function saveTodo() {
       title: title.value.trim(),
       description: description.value.trim(),
       isActive: isActive.value,
+      isCompleted: isCompleted.value,
       createDate: new Date(),
     };
     if (id.value) {
@@ -143,11 +151,12 @@ async function toggleTodo(todo: Todo) {
     await api.put(`/Todos/${todo.id}`, {
       title: todo.title,
       description: todo.description,
-      isActive: !todo.isActive,
+      isActive: todo.isActive,
+      isCompleted: !todo.isCompleted,
       createDate: todo.createDate,
       updateDate: new Date(),
     } satisfies UpdateTodoRequest);
-    todo.isActive = !todo.isActive;
+    todo.isCompleted = !todo.isCompleted;
   } catch {
     error.value = "Görev durumu değiştirilemedi. Lütfen yeniden deneyin.";
   } finally {
@@ -221,11 +230,7 @@ onMounted(loadTodos);
         <div class="breadcrumb">
           Çalışma alanım <span>/</span>
           <strong>{{
-            filter === "all"
-              ? "Genel bakış"
-              : filter === "active"
-                ? "Aktif görevler"
-                : "Tamamlananlar"
+            filterLabels[filter]
           }}</strong>
         </div>
         <span class="today"
@@ -349,6 +354,8 @@ onMounted(loadTodos);
                 >
                   Tamamlanan
                 </button>
+                <button :class="{ active: filter === 'incomplete' }" :aria-pressed="filter === 'incomplete'" @click="filter = 'incomplete'">Tamamlanmayan</button>
+                <button :class="{ active: filter === 'inactive' }" :aria-pressed="filter === 'inactive'" @click="filter = 'inactive'">Pasif</button>
               </div>
               <label class="search-box"
                 ><AppIcon name="search" :size="17" /><input
@@ -373,7 +380,9 @@ onMounted(loadTodos);
                     : filter === "completed"
                       ? "Güzel işler sırada"
                       : filter === "active"
-                        ? "Her şey tamam!"
+                        ? "Aktif görevin yok"
+                        : filter === "inactive" ? "Pasif görevin yok"
+                        : filter === "incomplete" ? "Tamamlanmamış görevin yok"
                         : "Yeni bir başlangıca yer aç"
                 }}
               </h3>
@@ -384,7 +393,9 @@ onMounted(loadTodos);
                     : filter === "completed"
                       ? "Tamamladığın görevler burada yer alacak."
                       : filter === "active"
-                        ? "Aktif görevin yok. Kendine biraz zaman ayır."
+                        ? "Aktif olarak işaretlediğin görevler burada yer alacak."
+                        : filter === "inactive" ? "Pasif olarak işaretlediğin görevler burada yer alacak."
+                        : filter === "incomplete" ? "Tamamlanmamış görevlerin burada yer alacak."
                         : "İlk görevini ekle, aklındakileri küçük adımlara dönüştür."
                 }}
               </p>
@@ -400,20 +411,20 @@ onMounted(loadTodos);
               <li
                 v-for="todo in visibleTodos"
                 :key="todo.id"
-                :class="['task-item', { completed: !todo.isActive }]"
+                :class="['task-item', { completed: todo.isCompleted }]"
               >
                 <button
-                  :class="['task-checkbox', { checked: !todo.isActive }]"
+                  :class="['task-checkbox', { checked: todo.isCompleted }]"
                   :disabled="busyId !== null"
                   :aria-label="
-                    todo.isActive
+                    !todo.isCompleted
                       ? `${todo.title} görevini tamamla`
-                      : `${todo.title} görevini aktifleştir`
+                      : `${todo.title} görevini tamamlanmadı olarak işaretle`
                   "
-                  :aria-pressed="!todo.isActive"
+                  :aria-pressed="todo.isCompleted"
                   @click="toggleTodo(todo)"
                 >
-                  <AppIcon v-if="!todo.isActive" name="check" :size="15" />
+                  <AppIcon v-if="todo.isCompleted" name="check" :size="15" />
                 </button>
                 <div class="task-details">
                   <h3>{{ todo.title }}</h3>
@@ -422,10 +433,12 @@ onMounted(loadTodos);
                     <span
                       :class="[
                         'status-badge',
-                        todo.isActive ? 'status-active' : 'status-completed',
+                        todo.isActive ? 'status-active' : 'status-inactive',
                       ]"
-                      ><i />{{ todo.isActive ? "Aktif" : "Tamamlandı" }}</span
-                    ><span
+                      ><i />{{ todo.isActive ? "Aktif" : "Pasif" }}</span
+                    ><span :class="['status-badge', todo.isCompleted ? 'status-completed' : 'status-active']">
+                      <i />{{ todo.isCompleted ? "Tamamlandı" : "Tamamlanmadı" }}
+                    </span><span
                       ><AppIcon name="calendar" :size="13" />{{
                         formatDate(todo.createDate)
                       }}</span
@@ -509,14 +522,18 @@ onMounted(loadTodos);
                 /><label class="switch-label"
                   ><span
                     ><strong>Aktif görev</strong
-                    ><small>Yapılacaklar listende yer alsın.</small></span
+                    ><small>Görevin aktif veya pasif olmasını belirler.</small></span
                   ><input
                     v-model="isActive"
                     type="checkbox"
                     class="switch-input" /><span
                     class="switch"
                     aria-hidden="true" /></label
-                ><button
+                ><label class="switch-label">
+                  <span><strong>Tamamlandı</strong><small>Aktif/pasif durumundan bağımsızdır.</small></span>
+                  <input v-model="isCompleted" type="checkbox" class="switch-input" />
+                  <span class="switch" aria-hidden="true" />
+                </label><button
                   class="button primary full-width"
                   :disabled="saving || !title.trim()"
                   type="submit"
