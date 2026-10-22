@@ -50,49 +50,37 @@ async function submit() {
   <main class="auth-page">
     <section class="auth-story">
       <RouterLink :to="mode === 'login' ? '/login' : '/register'" class="brand"
-        ><span class="brand-icon"><AppIcon name="check" :size="23" /></span>
-        odak<span class="brand-dot">.</span></RouterLink
+        ><span class="brand-icon"><AppIcon name="route" :size="23" /></span>
+        rota<span class="brand-dot">↗</span></RouterLink
       >
       <div class="auth-story-content">
-        <div class="eyebrow"><span /> GÜNÜNE BİRAZ ALAN AÇ</div>
-        <h1>Daha sade bir plan.<br />Daha hafif bir zihin<span>.</span></h1>
+        <div class="eyebrow"><span /> DAHA FERAH BİR GÜN İÇİN</div>
+        <h1>Planın olsun.<br /><em>Yolun açık olsun.</em></h1>
         <p>
-          Aklındaki işleri küçük adımlara dönüştür.<br />Senin için önemli olana
-          yer kalsın.
+          Zihnindeki kalabalığı geride bırak.<br />Yapmak istediklerine kendi
+          rotanı çiz.
         </p>
-        <div class="auth-illustration" aria-hidden="true">
-          <div class="illustration-top">
-            <span class="mini-dots"><i /><i /><i /></span
-            ><span>Bugünün küçük adımları</span
-            ><AppIcon name="sun" :size="18" />
+        <div class="route-poster" aria-hidden="true">
+          <span class="poster-label">BİR PLAN, BİNLERCE OLASILIK.</span
+          ><svg viewBox="0 0 400 300">
+            <path
+              d="M55 270V210Q55 165 100 165H265Q320 165 320 110V85Q320 35 270 35H200"
+            />
+            <circle cx="55" cy="270" r="10" />
+            <circle cx="200" cy="35" r="10" />
+          </svg>
+          <div class="poster-note">
+            <AppIcon name="check" :size="18" /> Bir iş daha tamam.
           </div>
-          <div class="illustration-task">
-            <span class="mini-check"><AppIcon name="check" :size="14" /></span
-            ><span class="struck">Güne bir planla başla</span
-            ><span class="mini-tag">Tamamlandı</span>
-          </div>
-          <div class="illustration-task">
-            <span class="mini-check"><AppIcon name="check" :size="14" /></span
-            ><span class="struck">Kendine zaman ayır</span>
-          </div>
-          <div class="illustration-task">
-            <span class="mini-empty" /><span>Yeni fikirlere yer aç</span
-            ><span class="mini-tag pending">Sıradaki</span>
-          </div>
-          <div class="illustration-footer">
-            <span>Her küçük adım bir başlangıç.</span
-            ><AppIcon name="leaf" :size="17" />
-          </div>
-          <span class="floating-leaf"><AppIcon name="leaf" :size="30" /></span>
+          <span class="poster-compass"><AppIcon name="route" :size="46" /></span
+          ><span class="poster-caption">Yönünü sen belirle.</span>
         </div>
         <div class="auth-benefits">
           <span><AppIcon name="check" :size="15" /> Sade ve düzenli</span
           ><span><AppIcon name="check" :size="15" /> Tamamen sana ait</span>
         </div>
       </div>
-      <span class="auth-story-footer"
-        >Biraz plan, biraz odak. Gerisi sende.</span
-      >
+      <span class="auth-story-footer">ROTA / KİŞİSEL PLANLAMA ALANIN</span>
     </section>
     <section class="auth-form-area">
       <div class="auth-top-link">
@@ -106,7 +94,7 @@ async function submit() {
       </div>
       <div class="auth-form-content" :key="mode">
         <span class="auth-welcome-icon"
-          ><AppIcon :name="mode === 'login' ? 'sun' : 'leaf'" :size="27"
+          ><AppIcon :name="mode === 'login' ? 'sun' : 'route'" :size="27"
         /></span>
         <div class="eyebrow">
           {{
@@ -114,7 +102,7 @@ async function submit() {
           }}
         </div>
         <h2>
-          {{ mode === "login" ? "Tekrar hoş geldin." : "Birlikte başlayalım." }}
+          {{ mode === "login" ? "Yeniden merhaba." : "Kendi rotanı oluştur." }}
         </h2>
         <p>
           {{
@@ -177,7 +165,11 @@ async function submit() {
               <button
                 type="button"
                 class="icon-button"
-                :aria-label="showConfirmPassword ? 'Şifre tekrarını gizle' : 'Şifre tekrarını göster'"
+                :aria-label="
+                  showConfirmPassword
+                    ? 'Şifre tekrarını gizle'
+                    : 'Şifre tekrarını göster'
+                "
                 :aria-pressed="showConfirmPassword"
                 @click="showConfirmPassword = !showConfirmPassword"
               >
@@ -200,12 +192,12 @@ async function submit() {
           </button>
         </form>
         <div class="auth-form-note">
-          <AppIcon name="leaf" :size="15" /><span
+          <AppIcon name="route" :size="15" /><span
             >Her şeyi aynı anda yapmak zorunda değilsin.</span
           >
         </div>
       </div>
-      <footer class="auth-footer">DAHA AZ KARMAŞA. DAHA ÇOK ODAK.</footer>
+      <footer class="auth-footer">AZ KARMAŞA. DAHA ÇOK HAYAT.</footer>
     </section>
   </main>
 </template>

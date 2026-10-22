@@ -19,6 +19,7 @@ const title = ref("");
 const description = ref("");
 const isActive = ref(true);
 const createDate = ref<Date>(new Date());
+const editorDialog = ref<HTMLDialogElement | null>(null);
 const titleInput = ref<HTMLInputElement | null>(null);
 const deleteTarget = ref<Todo | null>(null);
 const deleteDialog = ref<HTMLDialogElement | null>(null);
@@ -83,6 +84,7 @@ function clearForm() {
   isActive.value = true;
 }
 async function focusForm() {
+  editorDialog.value?.showModal();
   await nextTick();
   titleInput.value?.focus();
   titleInput.value?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -125,6 +127,7 @@ async function saveTodo() {
       ? "Görev güncellendi."
       : "Yeni görev eklendi. Hadi başlayalım!";
     clearForm();
+    editorDialog.value?.close();
     await loadTodos();
   } catch {
     error.value = "Görev kaydedilemedi. Lütfen yeniden deneyin.";
@@ -178,56 +181,52 @@ onMounted(loadTodos);
 
 <template>
   <div class="workspace">
-    <aside class="sidebar">
+    <header class="sidebar">
       <RouterLink to="/todos" class="brand"
-        ><span class="brand-icon"><AppIcon name="check" :size="23" /></span>
-        odak<span class="brand-dot">.</span></RouterLink
+        ><span class="brand-icon"><AppIcon name="route" :size="23" /></span>
+        rota<span class="brand-dot">↗</span></RouterLink
       >
-      <div class="workspace-label">KİŞİSEL ALANIN</div>
       <nav aria-label="Görev menüsü">
         <button
           :class="['nav-item', { selected: filter === 'all' }]"
+          :aria-pressed="filter === 'all'"
           @click="filter = 'all'"
         >
           <AppIcon name="grid" /> Genel bakış <span>{{ todos.length }}</span>
         </button>
         <button
           :class="['nav-item', { selected: filter === 'active' }]"
+          :aria-pressed="filter === 'active'"
           @click="filter = 'active'"
         >
           <AppIcon name="clock" /> Aktif görevler <span>{{ activeCount }}</span>
         </button>
         <button
           :class="['nav-item', { selected: filter === 'completed' }]"
+          :aria-pressed="filter === 'completed'"
           @click="filter = 'completed'"
         >
           <AppIcon name="check" /> Tamamlananlar
           <span>{{ completedCount }}</span>
         </button>
       </nav>
-      <div class="sidebar-note">
-        <span class="note-icon"><AppIcon name="leaf" :size="26" /></span>
-        <h3>Küçük adımlar,<br />büyük değişimler.</h3>
-        <p>Her tamamlanan görev,<br />kendine ayırdığın bir alan.</p>
-        <div class="note-decoration" />
-      </div>
       <div class="sidebar-bottom">
-        <div class="profile">
-          <span class="avatar">B</span>
-          <div>
-            <strong>Benim çalışma alanım</strong
-            ><small>Bugün kendine odaklan.</small>
-          </div>
-        </div>
         <button class="logout-button" @click="logout">
           <AppIcon name="logout" :size="18" /> Çıkış yap
         </button>
       </div>
-    </aside>
+    </header>
     <main class="main-content">
       <header class="topbar">
         <div class="breadcrumb">
-          Çalışma alanım <span>/</span> <strong>Genel bakış</strong>
+          Çalışma alanım <span>/</span>
+          <strong>{{
+            filter === "all"
+              ? "Genel bakış"
+              : filter === "active"
+                ? "Aktif görevler"
+                : "Tamamlananlar"
+          }}</strong>
         </div>
         <span class="today"
           ><AppIcon name="calendar" :size="16" />{{ today }}</span
@@ -236,13 +235,44 @@ onMounted(loadTodos);
       <div class="page-content">
         <section class="page-heading">
           <div>
-            <div class="eyebrow"><span /> DAHA AZ KARMAŞA, DAHA ÇOK ODAK</div>
-            <h1>Güzel bir güne başla<span>.</span></h1>
-            <p>Aklındakileri bir yere bırak. Önündeki adıma odaklan.</p>
+            <div class="eyebrow"><span /> KENDİ YOLUNU ÇİZ</div>
+            <h1>Gününü tasarla<span>.</span></h1>
+            <p>Biraz netlik, biraz hareket. Bugün nereye varmak istersin?</p>
           </div>
           <button class="button primary" @click="newTodo">
             <AppIcon name="plus" :size="18" /> Yeni görev
           </button>
+        </section>
+        <section class="focus-banner" aria-label="İlerleme özeti">
+          <div>
+            <span class="banner-kicker">YOLCULUĞUN BİR BAKIŞTA</span>
+            <h2>Her tamamlanan iş,<br /><em>yeni bir yol açar.</em></h2>
+            <p>
+              {{
+                todos.length
+                  ? `${todos.length} görevinden ${completedCount} tanesini tamamladın. Kendi ritminde devam et.`
+                  : "İlk görevini ekle. Gerisi senin ritminde ilerlesin."
+              }}
+            </p>
+          </div>
+          <div class="route-art" aria-hidden="true">
+            <svg viewBox="0 0 420 180">
+              <path
+                d="M10 145 H105 Q145 145 145 105 V75 Q145 35 185 35 H240 Q280 35 280 75 V105 Q280 145 320 145 H400"
+              />
+              <circle cx="12" cy="145" r="8" />
+              <circle cx="210" cy="35" r="8" />
+              <circle cx="400" cy="145" r="8" /></svg
+            ><span class="route-marker"
+              ><AppIcon name="route" :size="28" /></span
+            ><span class="route-caption"
+              >Küçük planlar. Güzel başlangıçlar.</span
+            >
+          </div>
+          <div class="journey-total">
+            <strong>%{{ progress }}</strong
+            ><span>tamamlandı</span>
+          </div>
         </section>
         <section class="overview" aria-label="Görev özeti">
           <div class="stat-card">
@@ -291,9 +321,10 @@ onMounted(loadTodos);
             <div class="panel-heading">
               <div>
                 <h2>
-                  Görevlerim <span class="count-badge">{{ todos.length }}</span>
+                  Yapılacaklar
+                  <span class="count-badge">{{ todos.length }}</span>
                 </h2>
-                <p>Bir plan yap, bir adım at, fark yarat.</p>
+                <p>Aklından çıkar, rotana ekle.</p>
               </div>
               <AppIcon name="list" :size="21" />
             </div>
@@ -301,16 +332,19 @@ onMounted(loadTodos);
               <div class="filter-tabs" aria-label="Görev filtresi">
                 <button
                   :class="{ active: filter === 'all' }"
+                  :aria-pressed="filter === 'all'"
                   @click="filter = 'all'"
                 >
                   Tümü</button
                 ><button
                   :class="{ active: filter === 'active' }"
+                  :aria-pressed="filter === 'active'"
                   @click="filter = 'active'"
                 >
                   Aktif <span>{{ activeCount }}</span></button
                 ><button
                   :class="{ active: filter === 'completed' }"
+                  :aria-pressed="filter === 'completed'"
                   @click="filter = 'completed'"
                 >
                   Tamamlanan
@@ -330,7 +364,7 @@ onMounted(loadTodos);
             </div>
             <div v-else-if="!visibleTodos.length" class="empty-state">
               <span class="empty-icon"
-                ><AppIcon :name="search ? 'search' : 'leaf'" :size="32"
+                ><AppIcon :name="search ? 'search' : 'route'" :size="32"
               /></span>
               <h3>
                 {{
@@ -420,27 +454,43 @@ onMounted(loadTodos);
             </ul>
             <div class="list-footer">
               <span>{{ visibleTodos.length }} görev gösteriliyor</span
-              ><span>Her adım önemli.<AppIcon name="leaf" :size="14" /></span>
+              ><span>Her adım önemli.<AppIcon name="route" :size="14" /></span>
             </div>
           </section>
-          <aside class="right-column">
+          <dialog
+            ref="editorDialog"
+            class="editor-dialog"
+            aria-labelledby="editor-title"
+            @click.self="!saving && editorDialog?.close()"
+            @cancel="saving && $event.preventDefault()"
+          >
             <section class="panel form-panel">
               <div class="panel-heading">
                 <div>
-                  <h2>{{ id ? "Görevi düzenle" : "Aklında ne var?" }}</h2>
+                  <h2 id="editor-title">
+                    {{ id ? "Görevi düzenle" : "Rotana bir görev ekle" }}
+                  </h2>
                   <p>
                     {{
                       id
                         ? "Küçük bir değişiklik, yeni bir adım."
-                        : "Bir yere yaz, zihnin hafiflesin."
+                        : "Aklındakini yapılacaklara dönüştür."
                     }}
                   </p>
                 </div>
-                <span class="form-plus"
-                  ><AppIcon :name="id ? 'edit' : 'plus'" :size="19"
-                /></span>
+                <button
+                  class="icon-button"
+                  aria-label="Formu kapat"
+                  :disabled="saving"
+                  @click="editorDialog?.close()"
+                >
+                  <AppIcon name="close" />
+                </button>
               </div>
               <form @submit.prevent="saveTodo">
+                <div v-if="error" class="message error" role="alert">
+                  {{ error }}
+                </div>
                 <label for="task-title">Görev başlığı <span>*</span></label
                 ><input
                   id="task-title"
@@ -488,43 +538,12 @@ onMounted(loadTodos);
                 </button>
               </form>
             </section>
-            <section class="progress-card">
-              <div class="progress-heading">
-                <span class="stat-icon green"
-                  ><AppIcon name="sun" :size="20" /></span
-                ><span>Adım adım, ileriye.</span>
-              </div>
-              <p>
-                {{
-                  todos.length
-                    ? "Tamamladığın her görevle biraz daha yol alıyorsun."
-                    : "Büyük planlar küçük bir görevle başlar."
-                }}
-              </p>
-              <div class="progress-label">
-                <span>Tamamlanma oranı</span><strong>%{{ progress }}</strong>
-              </div>
-              <div
-                class="progress-track"
-                role="progressbar"
-                :aria-valuenow="progress"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-label="Görev tamamlanma oranı"
-              >
-                <span :style="{ width: `${progress}%` }" />
-              </div>
-              <small
-                >{{ completedCount }} / {{ todos.length }} görev
-                tamamlandı</small
-              >
-            </section>
-          </aside>
+          </dialog>
         </div>
         <footer class="page-footer">
-          <span>Biraz plan, biraz odak. Gerisi sende.</span
+          <span>Planın belli. Yolun açık.</span
           ><span
-            >odak. ile daha sakin bir gün <AppIcon name="leaf" :size="13"
+            >rota / Hayatına yer aç <AppIcon name="route" :size="13"
           /></span>
         </footer>
       </div>

@@ -6,6 +6,14 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Development only: use the API's HTTP launch profile without browser CORS
+  // or local HTTPS certificate requirements. Production builds are unaffected.
+  server: {
+    proxy: {
+      '/api': { target: 'http://localhost:5044', changeOrigin: true },
+      '/health': { target: 'http://localhost:5044', changeOrigin: true },
+    },
+  },
   plugins: [
     vue(),
     //vueDevTools(),
