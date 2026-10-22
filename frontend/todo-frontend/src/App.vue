@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from "@/i18n";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import AppIcon from "./components/AppIcon.vue";
+import LanguageToggle from "./components/LanguageToggle.vue";
 import { wakeServer } from "./api/wakeServer";
 
+const { t } = useI18n();
 const status = ref<"connecting" | "ready" | "error">("connecting");
 let controller: AbortController | undefined;
 
@@ -29,6 +32,7 @@ onBeforeUnmount(() => controller?.abort());
   <router-view v-if="status === 'ready'" />
   <main v-else class="startup-page" :aria-busy="status === 'connecting'">
     <section class="startup-card" aria-labelledby="startup-title">
+      <LanguageToggle />
       <span class="startup-brand"
         ><AppIcon name="route" :size="36" /> adım.</span
       >
@@ -41,21 +45,19 @@ onBeforeUnmount(() => controller?.abort());
         <h1 id="startup-title">
           {{
             status === "connecting"
-              ? "Bağlantı hazırlanıyor"
-              : "Bağlantı kurulamadı"
+              ? t("connecting")
+              : t("connectionFailed")
           }}
         </h1>
         <p v-if="status === 'connecting'">
-          Sunucu başlatılıyor. İlk bağlantı yaklaşık bir dakika sürebilir; hazır
-          olduğunda otomatik devam edeceğiz.
+          {{ t('startupWait') }}
         </p>
         <p v-else>
-          Sunucuya şu anda ulaşamıyoruz. İnternet bağlantını kontrol edip tekrar
-          deneyebilirsin.
+          {{ t('startupError') }}
         </p>
       </div>
       <button v-if="status === 'error'" type="button" @click="connect">
-        Tekrar dene
+        {{ t('retry') }}
       </button>
     </section>
   </main>
@@ -83,6 +85,7 @@ onBeforeUnmount(() => controller?.abort());
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 28px;
+  margin-top: 20px;
 }
 h1 {
   font-size: 24px;
